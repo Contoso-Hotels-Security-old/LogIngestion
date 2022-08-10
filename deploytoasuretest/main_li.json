@@ -1,0 +1,2889 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.5.6.12127",
+      "templateHash": "3760791416733617088"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "automationAccountName": {
+      "type": "string"
+    },
+    "workspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of Log Analytics, New or Existing"
+      }
+    },
+    "newOrExistingLA": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ]
+    },
+    "ExistingLAWResourceGroup": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource Group name in case of existing Log Analytics"
+      }
+    },
+    "functionAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of backend function App"
+      }
+    },
+    "workbookName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of Azure workbook"
+      }
+    },
+    "dataCollectionEndpointName": {
+      "type": "string"
+    }
+  },
+  "variables": {
+    "LAWRG": "[if(equals(parameters('newOrExistingLA'), 'new'), resourceGroup().name, parameters('ExistingLAWResourceGroup'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "deployAA",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "automationAccountName": {
+            "value": "[parameters('automationAccountName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "13568226900832290978"
+            }
+          },
+          "parameters": {
+            "automationAccountName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            }
+          },
+          "variables": {
+            "storageenv": "[environment().suffixes.storage]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Automation/automationAccounts",
+              "apiVersion": "2021-06-22",
+              "name": "[parameters('automationAccountName')]",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "Basic"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Automation/automationAccounts/modules",
+              "apiVersion": "2020-01-13-preview",
+              "name": "[format('{0}/{1}', parameters('automationAccountName'), 'Az.Automation')]",
+              "tags": {},
+              "properties": {
+                "contentLink": {
+                  "uri": "[format('https://devopsgallerystorage.blob.{0}/packages/az.automation.1.7.3.nupkg', variables('storageenv'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Automation/automationAccounts', parameters('automationAccountName'))]"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "deployAArbac",
+      "subscriptionId": "[subscription().subscriptionId]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "automationAccountName": {
+            "value": "[parameters('automationAccountName')]"
+          },
+          "automationAccountRG": {
+            "value": "[resourceGroup().name]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "18419966530551912874"
+            }
+          },
+          "parameters": {
+            "automationAccountName": {
+              "type": "string"
+            },
+            "automationAccountRG": {
+              "type": "string"
+            },
+            "datenow": {
+              "type": "string",
+              "defaultValue": "[utcNow()]"
+            }
+          },
+          "variables": {
+            "roleDefinitionIds": [
+              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/f353d9bd-d4a6-484e-a77a-8050b599b867', subscription().subscriptionId)]",
+              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293', subscription().subscriptionId)]",
+              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/749f88d5-cbae-40b8-bcfc-e573ddc772fa', subscription().subscriptionId)]",
+              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/3913510d-42f4-4e42-8a64-420c390055eb', subscription().subscriptionId)]"
+            ]
+          },
+          "resources": [
+            {
+              "copy": {
+                "name": "roleassignment",
+                "count": "[length(variables('roleDefinitionIds'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-08-01-preview",
+              "name": "[guid(subscription().subscriptionId, variables('roleDefinitionIds')[copyIndex()], parameters('datenow'))]",
+              "properties": {
+                "principalId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName')), '2021-06-22', 'full').identity.principalId]",
+                "roleDefinitionId": "[variables('roleDefinitionIds')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "deployAArunbooks",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "automationAccountName": {
+            "value": "[parameters('automationAccountName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "10189018852801834525"
+            }
+          },
+          "parameters": {
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "automationAccountName": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Automation/automationAccounts/runbooks",
+              "apiVersion": "2019-06-01",
+              "name": "[format('{0}/CommonScheduler', parameters('automationAccountName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "runbookType": "PowerShell",
+                "logProgress": false,
+                "logVerbose": true,
+                "publishContentLink": {
+                  "uri": "https://raw.githubusercontent.com/baldcorp/publictest/main/scripts/CommonScheduler.ps1",
+                  "version": "1.0.0.0"
+                }
+              }
+            },
+            {
+              "type": "Microsoft.Automation/automationAccounts/runbooks",
+              "apiVersion": "2019-06-01",
+              "name": "[format('{0}/CommonLogIngest', parameters('automationAccountName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "runbookType": "PowerShell",
+                "logProgress": false,
+                "logVerbose": true,
+                "publishContentLink": {
+                  "uri": "https://raw.githubusercontent.com/baldcorp/publictest/c73044e852f365b0132aef5368635cb3ebd1007f/scripts/CommonLogIngest.ps1",
+                  "version": "1.0.0.0"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployAA')]"
+      ]
+    },
+    {
+      "condition": "[equals(parameters('newOrExistingLA'), 'new')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "deployLAW",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "workspaceName": {
+            "value": "[parameters('workspaceName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "12520201469068166194"
+            }
+          },
+          "parameters": {
+            "workspaceName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "solutionTypes": {
+              "type": "array",
+              "defaultValue": [
+                "SecurityInsights"
+              ]
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2020-10-01",
+              "name": "[parameters('workspaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30,
+                "workspaceCapping": {
+                  "dailyQuotaGb": -1
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            },
+            {
+              "copy": {
+                "name": "solutionTypes_blank_solutionTypes_workspaceName",
+                "count": "[length(parameters('solutionTypes'))]"
+              },
+              "type": "Microsoft.OperationsManagement/solutions",
+              "apiVersion": "2015-11-01-preview",
+              "name": "[format('{0}({1})', if(empty(parameters('solutionTypes')), '__blank__', parameters('solutionTypes')[copyIndex()]), parameters('workspaceName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              },
+              "plan": {
+                "name": "[format('{0}({1})', if(empty(parameters('solutionTypes')), '__blank__', parameters('solutionTypes')[copyIndex()]), parameters('workspaceName'))]",
+                "product": "[format('OMSGallery/{0}', if(empty(parameters('solutionTypes')), '__blank__', parameters('solutionTypes')[copyIndex()]))]",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+              }
+            }
+          ],
+          "outputs": {
+            "newLAWid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[equals(parameters('newOrExistingLA'), 'existing')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "lawexist",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "workspaceRG": {
+            "value": "[parameters('ExistingLAWResourceGroup')]"
+          },
+          "workspaceName": {
+            "value": "[parameters('workspaceName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "15982553357079645261"
+            }
+          },
+          "parameters": {
+            "workspaceName": {
+              "type": "string"
+            },
+            "workspaceRG": {
+              "type": "string"
+            }
+          },
+          "resources": [],
+          "outputs": {
+            "LAWlocation": {
+              "type": "string",
+              "value": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspaceRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName')), '2020-10-01', 'full').location]"
+            },
+            "existingLAWid": {
+              "type": "string",
+              "value": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspaceRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "DeployfuncAPP",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "functionAppName": {
+            "value": "[parameters('functionAppName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "8168729296418353676"
+            }
+          },
+          "parameters": {
+            "baseTime": {
+              "type": "string",
+              "defaultValue": "[utcNow('u')]"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "functionAppName": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "storagename_var": "[toLower(parameters('functionAppName'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2021-09-01",
+              "name": "[variables('storagename_var')]",
+              "location": "[parameters('location')]",
+              "tags": {},
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "supportsHttpsTrafficOnly": true,
+                "minimumTlsVersion": "TLS1_2"
+              }
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}', variables('storagename_var'), 'default')]",
+              "properties": {
+                "cors": {
+                  "corsRules": []
+                },
+                "shareDeleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storagename_var'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+              "apiVersion": "2021-09-01",
+              "name": "[format('{0}/{1}/{2}', variables('storagename_var'), 'default', 'wbbeshare')]",
+              "properties": {
+                "shareQuota": 5120
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', variables('storagename_var'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/serverfarms",
+              "apiVersion": "2021-02-01",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "tags": {},
+              "sku": {
+                "tier": "Dynamic",
+                "name": "Y1"
+              },
+              "kind": "functionapp",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', variables('storagename_var'), 'default', 'wbbeshare')]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "tags": {},
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', variables('storagename_var'), 'default', 'wbbeshare')]",
+                "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites",
+              "apiVersion": "2021-03-01",
+              "name": "[parameters('functionAppName')]",
+              "location": "[parameters('location')]",
+              "tags": {},
+              "kind": "functionapp",
+              "identity": {
+                "type": "SystemAssigned"
+              },
+              "properties": {
+                "siteConfig": {
+                  "appSettings": [
+                    {
+                      "name": "FUNCTIONS_EXTENSION_VERSION",
+                      "value": "~4"
+                    },
+                    {
+                      "name": "FUNCTIONS_WORKER_RUNTIME",
+                      "value": "powershell"
+                    },
+                    {
+                      "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                      "value": "[reference(format('microsoft.insights/components/{0}', parameters('functionAppName')), '2015-05-01').InstrumentationKey]"
+                    },
+                    {
+                      "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                      "value": "[reference(format('microsoft.insights/components/{0}', parameters('functionAppName')), '2015-05-01').ConnectionString]"
+                    },
+                    {
+                      "name": "AzureWebJobsStorage",
+                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storagename_var'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storagename_var')), '2019-06-01').keys[0].value)]"
+                    },
+                    {
+                      "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                      "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', variables('storagename_var'), listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storagename_var')), '2019-06-01').keys[0].value)]"
+                    },
+                    {
+                      "name": "WEBSITE_RUN_FROM_PACKAGE",
+                      "value": "1"
+                    },
+                    {
+                      "name": "WEBSITE_CONTENTSHARE",
+                      "value": "wbbeshare"
+                    }
+                  ],
+                  "cors": {
+                    "allowedOrigins": [
+                      "https://ms.portal.azure.com",
+                      "https://portal.azure.com"
+                    ]
+                  },
+                  "use32BitWorkerProcess": true,
+                  "powerShellVersion": "~7",
+                  "netFrameworkVersion": "v6.0"
+                },
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppName'))]",
+                "clientAffinityEnabled": false
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', variables('storagename_var'), 'default', 'wbbeshare')]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storagename_var'))]",
+                "[resourceId('Microsoft.Insights/components', parameters('functionAppName'))]",
+                "[resourceId('Microsoft.Web/serverfarms', parameters('functionAppName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Web/sites/extensions",
+              "apiVersion": "2021-02-01",
+              "name": "[format('{0}/zipdeploy', parameters('functionAppName'))]",
+              "properties": {
+                "packageUri": "https://github.com/baldcorp/publictest/raw/main/scripts/func01.zip"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2020-10-01-preview",
+              "name": "[guid(resourceGroup().id, uniqueString(parameters('baseTime')))]",
+              "properties": {
+                "roleDefinitionId": "[format('{0}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c', subscription().id)]",
+                "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2018-11-01', 'Full').identity.principalId]",
+                "principalType": "ServicePrincipal",
+                "scope": "[resourceGroup().id]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployAA')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "Deployworkbook",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "displayName": {
+            "value": "[parameters('workbookName')]"
+          },
+          "workspaceName": {
+            "value": "[parameters('workspaceName')]"
+          },
+          "workspacesRG": {
+            "value": "[variables('LAWRG')]"
+          },
+          "automationAccountRG": {
+            "value": "[resourceGroup().name]"
+          },
+          "automationAccountName": {
+            "value": "[parameters('automationAccountName')]"
+          },
+          "functionName": {
+            "value": "[parameters('functionAppName')]"
+          },
+          "functionRG": {
+            "value": "[resourceGroup().name]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "15178066096437604134"
+            }
+          },
+          "parameters": {
+            "displayName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "workspaceName": {
+              "type": "string"
+            },
+            "workspacesRG": {
+              "type": "string"
+            },
+            "automationAccountRG": {
+              "type": "string"
+            },
+            "automationAccountName": {
+              "type": "string"
+            },
+            "functionName": {
+              "type": "string"
+            },
+            "functionRG": {
+              "type": "string"
+            }
+          },
+          "variables": {
+            "workbookName_var": "[guid(resourceGroup().id, parameters('displayName'))]"
+          },
+          "resources": [
+            {
+              "type": "microsoft.insights/workbooks",
+              "apiVersion": "2018-06-17-preview",
+              "name": "[variables('workbookName_var')]",
+              "location": "[parameters('location')]",
+              "kind": "shared",
+              "properties": {
+                "displayName": "[parameters('displayName')]",
+                "serializedData": "[string(createObject('version', 'Notebook/1.0', 'items', createArray(createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'parameters', createArray(createObject('id', 'eeec2f3e-4bf1-4d1e-bba6-8de46f0a3c00', 'version', 'KqlParameterItem/1.0', 'name', 'filePath', 'type', 1, 'value', 'https://raw.githubusercontent.com/Azure/Azure-Sentinel/master/Sample Data/CEF/AkamaiSIEM.csv', 'timeContext', createObject('durationMs', 86400000)), createObject('id', '318684e4-bcbb-4476-9fd5-1210a297b1b9', 'version', 'KqlParameterItem/1.0', 'name', 'fileFormat', 'type', 2, 'isRequired', true(), 'value', 'csv', 'typeSettings', createObject('additionalResourceOptions', createArray(), 'showDefault', false()), 'jsonData', '[\"json\",\"csv\"]'), createObject('id', '6a7ecbc8-0b92-4bf5-a214-bb74c67fe248', 'version', 'KqlParameterItem/1.0', 'name', 'targetTable', 'type', 2, 'isRequired', true(), 'value', 'CommonSecurityLog', 'typeSettings', createObject('additionalResourceOptions', createArray(), 'showDefault', false()), 'jsonData', '[\"Syslog\", \"CommonSecurityLog\", \"SecurityEvent\", \"WindowsEvent\", \"Custom\"]')), 'style', 'formHorizontal', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'name', 'parameters - 0'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'parameters', createArray(createObject('id', 'e6ae2f15-4bb5-4897-ab28-a153d0cf667b', 'version', 'KqlParameterItem/1.0', 'name', 'customTableName', 'type', 1, 'timeContext', createObject('durationMs', 86400000), 'value', 'TenableIO_CL'), createObject('id', '935aeeb0-4165-4148-b4e7-8226de5e95cf', 'version', 'KqlParameterItem/1.0', 'name', 'timestampColumn', 'type', 1, 'value', 'created_at', 'timeContext', createObject('durationMs', 86400000))), 'style', 'formHorizontal', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'conditionalVisibility', createObject('parameterName', 'targetTable', 'comparison', 'isEqualTo', 'value', 'Custom'), 'name', 'parameters - 6'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'parameters', createArray(createObject('id', 'ea63478b-e13b-43d2-8218-edad6b7c33a2', 'version', 'KqlParameterItem/1.0', 'name', 'startdate', 'type', 1, 'description', 'Additional field to specify start date for your log file (can be empty)', 'typeSettings', createObject('paramValidationRules', createArray(createObject('regExp', '^(19|20)\\d\\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])T(?:[01]\\d|2[0123]):(?:[012345]\\d):(?:[012345]\\d)$', 'match', true(), 'message', 'Does not match ISO8601 format (yyyy-MM-ddTHH:mm:ss) e.g. 2021-06-18T17:34:00'))), 'timeContext', createObject('durationMs', 86400000), 'value', '2022-05-22T14:20:20')), 'style', 'formHorizontal', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'name', 'parameters - 12'), createObject('type', 3, 'content', createObject('version', 'KqlItem/1.0', 'query', format('{{\"version\":\"CustomEndpoint/1.0\",\"data\":\"{{\\r\\n  \\\"templatePath\\\" : \\\"{{filePath}}\\\",\\r\\n  \\\"format\\\" : \\\"{{fileFormat}}\\\"\\r\\n}}\",\"headers\":[],\"method\":\"POST\",\"url\":\"https://{0}.azurewebsites.net/api/GetSampleFields?code={1}\",\"contentType\":\"application/json\",\"urlParams\":[],\"transformers\":null,\"ignoreStandardHeaders\":true}}', parameters('functionName'), listkeys(format('{0}/functions/GetSampleFields', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('functionRG')), 'Microsoft.Web/sites', parameters('functionName'))), '2018-02-01').default), 'size', 0, 'title', 'Select fields to replace', 'showRefreshButton', true(), 'exportMultipleValues', true(), 'exportedParameters', createArray(createObject('parameterName', 'fieldsToReplace', 'parameterType', 1, 'quote', '')), 'queryType', 10, 'gridSettings', createObject('formatters', createArray(createObject('columnMatch', 'Values', 'formatter', 5)), 'filter', true())), 'customWidth', '30', 'name', 'query - 9'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'parameters', createArray(createObject('id', '509b2033-a656-4435-bae9-04e2b628b9e5', 'version', 'KqlParameterItem/1.0', 'name', 'replacements', 'type', 1, 'query', 'let fields = dynamic([{fieldsToReplace}]);\r\nprint data = fields\r\n| mv-expand data\r\n| evaluate bag_unpack(data)\r\n| mv-expand todynamic(\"Values\")\r\n| project Field, replacements = pack(\"value\", Values, \"replacement\", Values)\r\n| summarize make_list(replacements) by Field\r\n| project pack = pack(Field, list_replacements)\r\n| summarize bag = make_bag(pack)\r\n| project tostring(bag)', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'typeSettings', createObject('multiLineText', true(), 'editorLanguage', 'json', 'multiLineHeight', 24, 'preFormatJsonData', true()), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces', 'label', 'Replacement configuration', 'value', null()), createObject('id', 'e0e942e2-b16c-428b-ac42-4a871c06534c', 'version', 'KqlParameterItem/1.0', 'name', 'replacementesecape', 'type', 1, 'query', 'let b=dynamic([\"{replacements:escapejson}\"]);\r\n//print substring(tostring(b),2,strlen(tostring(b))-4)\r\nprint substring(replace_string(tostring(b),\"''\",\"''''\"),2,strlen(replace_string(tostring(b),\"''\",\"''''\"))-4)', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'isHiddenWhenLocked', true(), 'typeSettings', createObject('multiLineText', true(), 'editorLanguage', 'text'), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces')), 'style', 'formVertical', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'customWidth', '30', 'name', 'parameters - 10'), createObject('type', 3, 'content', createObject('version', 'KqlItem/1.0', 'query', 'let replacements = dynamic({replacements});\r\nlet schema = print data = replacements\r\n| evaluate bag_unpack(data)\r\n| getschema;\r\nschema\r\n| project Field = ColumnName, replacements = replacements[ColumnName]\r\n| mvexpand replacements\r\n| project Field, Replacement = strcat(replacements.value, ''->'', replacements.replacement)\r\n', 'size', 0, 'title', 'Replacement rules', 'timeContext', createObject('durationMs', 86400000), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'gridSettings', createObject('filter', true())), 'customWidth', '40', 'name', 'query - 11'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'parameters', createArray(createObject('id', '3bad7e13-ea5a-4c85-ac1c-ca797bdab6dc', 'version', 'KqlParameterItem/1.0', 'name', 'jobId', 'type', 1, 'query', 'let r = dynamic({replacements});\r\nprint new_guid()', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'isHiddenWhenLocked', true(), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces', 'value', null())), 'style', 'pills', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'conditionalVisibility', createObject('parameterName', 'visible', 'comparison', 'isNotEqualTo'), 'name', 'parameters - 12'), createObject('type', 11, 'content', createObject('version', 'LinkItem/1.0', 'style', 'paragraph', 'links', createArray(createObject('id', '661676b7-f3c7-4b1f-9e68-702cf4afcd37', 'linkTarget', 'ArmAction', 'linkLabel', 'Test', 'preText', '', 'style', 'primary', 'icon', '1', 'linkIsContextBlade', true(), 'armActionContext', createObject('path', format('{0}/jobs/{{jobId}}?api-version=2017-05-15-preview', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName'))), 'headers', createArray(), 'params', createArray(), 'body', '{\r\n  \"properties\": {\r\n    \"parameters\": {\r\n  \"SamplePath\": \"''{filePath}''\",\r\n  \"Format\": \"''{fileFormat}''\",\r\n  \"Replacements\": \"''{replacementesecape:escapejson}''\"\r\n},\r\n    \"runbook\": {\r\n      \"name\": \"CommonLogIngest\"\r\n    },\r\n    \"runOn\": \"\"\r\n  }\r\n}', 'httpMethod', 'PUT', 'description', 'Run test log generation', 'runLabel', 'Run test')))), 'name', 'links - 1'), createObject('type', 3, 'content', createObject('version', 'KqlItem/1.0', 'query', format('{{\"version\":\"ARMEndpoint/1.0\",\"data\":null,\"headers\":[],\"method\":\"GET\",\"path\":\"{0}/Jobs?api-version=2017-05-15-preview\",\"urlParams\":[],\"batchDisabled\":true,\"transformers\":[{{\"type\":\"jsonpath\",\"settings\":{{\"tablePath\":\"$.value[?(@.name==''{{jobId}}'' && @.properties.status==''Completed'')].name\",\"columns\":[]}}}}]}}', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName'))), 'size', 3, 'noDataMessage', 'Test data is not available yet. Click Refresh.', 'showRefreshButton', true(), 'exportFieldName', 'Column', 'exportParameterName', 'jobComplete', 'queryType', 12, 'gridSettings', createObject('labelSettings', createArray(createObject('columnId', 'Column', 'label', 'Click ID to see the results')))), 'name', 'query - 4'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'parameters', createArray(createObject('id', '1bb2f28a-0704-41b6-9b1a-55eba6b70916', 'version', 'KqlParameterItem/1.0', 'name', 'streamId', 'type', 1, 'query', format('{{\"version\":\"ARMEndpoint/1.0\",\"data\":null,\"headers\":[],\"method\":\"GET\",\"path\":\"{0}/Jobs/{{jobId}}/streams?api-version=2017-05-15-preview\",\"urlParams\":[],\"batchDisabled\":true,\"transformers\":[{{\"type\":\"jsonpath\",\"settings\":{{\"tablePath\":\"$.value[1].id\",\"columns\":[]}}}}]}}', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName'))), 'isHiddenWhenLocked', true(), 'timeContext', createObject('durationMs', 86400000), 'queryType', 12, 'value', null()), createObject('id', '9e4769dc-bdeb-4834-b620-e56fb7508e81', 'version', 'KqlParameterItem/1.0', 'name', 'testData', 'type', 1, 'query', '{\"version\":\"ARMEndpoint/1.0\",\"data\":null,\"headers\":[],\"method\":\"GET\",\"path\":\"{streamId}?api-version=2017-05-15-preview\",\"urlParams\":[],\"batchDisabled\":false,\"transformers\":[{\"type\":\"jsonpath\",\"settings\":{\"tablePath\":\"$.properties.streamText\",\"columns\":[]}}]}', 'isHiddenWhenLocked', true(), 'typeSettings', createObject('multiLineText', true(), 'editorLanguage', 'json'), 'timeContext', createObject('durationMs', 86400000), 'queryType', 12)), 'style', 'pills', 'doNotRunWhenHidden', true(), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'conditionalVisibility', createObject('parameterName', 'jobComplete', 'comparison', 'isNotEqualTo'), 'name', 'parameters - 3'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'parameters', createArray(createObject('id', '77ef9624-90e8-4468-a2de-24e50c5f3061', 'version', 'KqlParameterItem/1.0', 'name', 'jobId', 'type', 1, 'query', 'let r = dynamic({replacements});\r\nprint new_guid()', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))), 'isHiddenWhenLocked', true(), 'timeContext', createObject('durationMs', 86400000), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces', 'value', null())), 'style', 'pills', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'conditionalVisibility', createObject('parameterName', 'jobComplete', 'comparison', 'isNotEqualTo'), 'name', 'parameters - 3 - Copy'), createObject('type', 3, 'content', createObject('version', 'KqlItem/1.0', 'query', 'let data = dynamic({testData});\r\nprint data = data\r\n| mvexpand data\r\n| evaluate bag_unpack(data)', 'size', 0, 'showAnalytics', true(), 'timeContext', createObject('durationMs', 86400000), 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces', 'crossComponentResources', createArray(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName')))), 'conditionalVisibility', createObject('parameterName', 'streamId', 'comparison', 'isNotEqualTo'), 'name', 'query - 2'), createObject('type', 9, 'content', createObject('version', 'KqlParameterItem/1.0', 'parameters', createArray(createObject('id', 'e604bc9a-e596-4dc6-aa4e-832778684ace', 'version', 'KqlParameterItem/1.0', 'name', 'Recurring', 'type', 2, 'description', 'Choose time range for log ingestion schedule', 'isRequired', true(), 'value', '1 hour', 'typeSettings', createObject('additionalResourceOptions', createArray(), 'showDefault', false()), 'jsonData', '[\"1 hour\",\"4 hours\",\"8 hours\",\"12 hours\",\"Daily\", \"Weekly\"]', 'timeContext', createObject('durationMs', 86400000))), 'style', 'above', 'queryType', 0, 'resourceType', 'microsoft.operationalinsights/workspaces'), 'name', 'parameters - 13'), createObject('type', 11, 'content', createObject('version', 'LinkItem/1.0', 'style', 'paragraph', 'links', createArray(createObject('id', '6191ad25-577d-4481-8687-f0d3d5c34036', 'linkTarget', 'ArmAction', 'linkLabel', 'Ingest', 'preText', '', 'style', 'primary', 'icon', '1', 'linkIsContextBlade', true(), 'armActionContext', createObject('path', format('{0}/jobs/{{jobId}}?api-version=2017-05-15-preview', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName'))), 'headers', createArray(), 'params', createArray(), 'body', '{\r\n  \"properties\": {\r\n    \"parameters\": {\r\n  \"SamplePath\": \"''{filePath}''\",\r\n  \"Format\": \"''{fileFormat}''\",\r\n  \"targetTableName\": \"''{targetTable}-{customTableName}''\",\r\n  \"Replacements\": \"''{replacementesecape:escapejson}''\",\r\n  \"timestampColumn\": \"''{timestampColumn}''\",\r\n \"startdate\": \"''{startdate}''\",\r\n  \"Test\":false\r\n},\r\n    \"runbook\": {\r\n      \"name\": \"CommonLogIngest\"\r\n    },\r\n    \"runOn\": \"\"\r\n  }\r\n}', 'httpMethod', 'PUT', 'description', 'Generate logs and ingest', 'runLabel', 'Ingest Logs')), createObject('id', '8279ab66-22e7-4bc4-8ff6-38a680d159ac', 'linkTarget', 'ArmAction', 'linkLabel', 'Schedule', 'style', 'secondary', 'linkIsContextBlade', true(), 'armActionContext', createObject('path', format('{0}/jobs/{{jobId}}?api-version=2017-05-15-preview', extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName'))), 'headers', createArray(), 'params', createArray(), 'body', '{\r\n  \"properties\": {\r\n    \"parameters\": {\r\n  \"SamplePath\": \"''{filePath}''\",\r\n  \"Format\": \"''{fileFormat}''\",\r\n  \"targetTableName\": \"''{targetTable}-{customTableName}''\",\r\n  \"Recurring\": \"''{Recurring}''\" ,\r\n  \"Replacements\": \"''{replacementesecape:escapejson}''\"\r\n},\r\n    \"runbook\": {\r\n      \"name\": \"CommonScheduler\"\r\n    },\r\n    \"runOn\": \"\"\r\n  }\r\n}', 'httpMethod', 'PUT', 'description', 'Generate schedule for ingest runbook')))), 'name', 'links - 1 - Copy')), 'isLocked', false()))]",
+                "version": "1.0",
+                "sourceId": "[extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('workspacesRG')), 'Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+                "category": "sentinel"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployAA')]",
+        "[resourceId('Microsoft.Resources/deployments', 'DeployfuncAPP')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "deployDCE",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
+          },
+          "dataCollectionEndpointName": {
+            "value": "[parameters('dataCollectionEndpointName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "14330851507373296387"
+            }
+          },
+          "parameters": {
+            "dataCollectionEndpointName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionEndpoints",
+              "apiVersion": "2021-04-01",
+              "name": "[parameters('dataCollectionEndpointName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "networkAcls": {
+                  "publicNetworkAccess": "Enabled"
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "dceURL": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('dataCollectionEndpointName'))).logsIngestion.endpoint]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "DeployDCRsef",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
+          },
+          "dataCollectionRuleName": {
+            "value": "CommonSecurityLog"
+          },
+          "workspaceResourceId": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
+          },
+          "endpointResourceName": {
+            "value": "[parameters('dataCollectionEndpointName')]"
+          },
+          "outTable": {
+            "value": "Microsoft-CommonSecurityLog"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "3107494479059515046"
+            }
+          },
+          "parameters": {
+            "dataCollectionRuleName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "workspaceResourceId": {
+              "type": "string"
+            },
+            "endpointResourceName": {
+              "type": "string"
+            },
+            "outTable": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2021-09-01-preview",
+              "name": "[parameters('dataCollectionRuleName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('endpointResourceName'))]",
+                "streamDeclarations": {
+                  "Custom-MyTableRawData": {
+                    "columns": [
+                      {
+                        "type": "datetime",
+                        "name": "TimeGenerated"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceVendor"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceProduct"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceVersion"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceEventClassID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Activity"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LogSeverity"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OriginalLogSeverity"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AdditionalExtensions"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceAction"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ApplicationProtocol"
+                      },
+                      {
+                        "type": "int",
+                        "name": "EventCount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationDnsDomain"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationServiceName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationTranslatedAddress"
+                      },
+                      {
+                        "type": "int",
+                        "name": "DestinationTranslatedPort"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CommunicationDirection"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceDnsDomain"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceExternalID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceFacility"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceInboundInterface"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceNtDomain"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceOutboundInterface"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DevicePayloadId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProcessName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceTranslatedAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationHostName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationMACAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationNTDomain"
+                      },
+                      {
+                        "type": "int",
+                        "name": "DestinationProcessId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationUserPrivileges"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationProcessName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "DestinationPort"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationIP"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceTimeZone"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationUserID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DestinationUserName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceMacAddress"
+                      },
+                      {
+                        "type": "int",
+                        "name": "ProcessID"
+                      },
+                      {
+                        "type": "datetime",
+                        "name": "EndTime"
+                      },
+                      {
+                        "type": "int",
+                        "name": "ExternalID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileCreateTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileHash"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileModificationTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FilePath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FilePermission"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "FileSize"
+                      },
+                      {
+                        "type": "long",
+                        "name": "ReceivedBytes"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Message"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFileCreateTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFileHash"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFileID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFileModificationTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFileName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFilePath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFilePermission"
+                      },
+                      {
+                        "type": "int",
+                        "name": "OldFileSize"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldFileType"
+                      },
+                      {
+                        "type": "long",
+                        "name": "SentBytes"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Protocol"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RequestURL"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RequestClientApplication"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RequestContext"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RequestCookies"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RequestMethod"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ReceiptTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceHostName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceMACAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceNTDomain"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceDnsDomain"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceServiceName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceTranslatedAddress"
+                      },
+                      {
+                        "type": "int",
+                        "name": "SourceTranslatedPort"
+                      },
+                      {
+                        "type": "int",
+                        "name": "SourceProcessId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceUserPrivileges"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceProcessName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "SourcePort"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceIP"
+                      },
+                      {
+                        "type": "datetime",
+                        "name": "StartTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceUserID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceUserName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "EventType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address1Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address2Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address3"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address3Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address4"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomIPv6Address4Label"
+                      },
+                      {
+                        "type": "real",
+                        "name": "DeviceCustomFloatingPoint1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomFloatingPoint1Label"
+                      },
+                      {
+                        "type": "real",
+                        "name": "DeviceCustomFloatingPoint2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomFloatingPoint2Label"
+                      },
+                      {
+                        "type": "real",
+                        "name": "DeviceCustomFloatingPoint3"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomFloatingPoint3Label"
+                      },
+                      {
+                        "type": "real",
+                        "name": "DeviceCustomFloatingPoint4"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomFloatingPoint4Label"
+                      },
+                      {
+                        "type": "int",
+                        "name": "DeviceCustomNumber1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomNumber1Label"
+                      },
+                      {
+                        "type": "int",
+                        "name": "DeviceCustomNumber2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomNumber2Label"
+                      },
+                      {
+                        "type": "int",
+                        "name": "DeviceCustomNumber3"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomNumber3Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString1Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString2Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString3"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString3Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString4"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString4Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString5"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString5Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString6"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomString6Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomDate1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomDate1Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomDate2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceCustomDate2Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexDate1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexDate1Label"
+                      },
+                      {
+                        "type": "int",
+                        "name": "FlexNumber1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexNumber1Label"
+                      },
+                      {
+                        "type": "int",
+                        "name": "FlexNumber2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexNumber2Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexString1"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexString1Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexString2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FlexString2Label"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RemoteIP"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RemotePort"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MaliciousIP"
+                      },
+                      {
+                        "type": "int",
+                        "name": "ThreatSeverity"
+                      },
+                      {
+                        "type": "string",
+                        "name": "IndicatorThreatType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ThreatDescription"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ThreatConfidence"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ReportReferenceLink"
+                      },
+                      {
+                        "type": "real",
+                        "name": "MaliciousIPLongitude"
+                      },
+                      {
+                        "type": "real",
+                        "name": "MaliciousIPLatitude"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MaliciousIPCountry"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Computer"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceSystem"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SimplifiedDeviceAction"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Type"
+                      }
+                    ]
+                  }
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                      "name": "clv2ws1"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Custom-MyTableRawData"
+                    ],
+                    "destinations": [
+                      "clv2ws1"
+                    ],
+                    "transformKql": "source",
+                    "outputStream": "[parameters('outTable')]"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "dcrId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName'))).immutableId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "DeployDCRsyslog",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
+          },
+          "dataCollectionRuleName": {
+            "value": "Syslog"
+          },
+          "workspaceResourceId": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
+          },
+          "endpointResourceName": {
+            "value": "[parameters('dataCollectionEndpointName')]"
+          },
+          "outTable": {
+            "value": "Microsoft-Syslog"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "16515488000610423085"
+            }
+          },
+          "parameters": {
+            "dataCollectionRuleName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "workspaceResourceId": {
+              "type": "string"
+            },
+            "endpointResourceName": {
+              "type": "string"
+            },
+            "outTable": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2021-09-01-preview",
+              "name": "[parameters('dataCollectionRuleName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('endpointResourceName'))]",
+                "streamDeclarations": {
+                  "Custom-MyTableRawData": {
+                    "columns": [
+                      {
+                        "type": "string",
+                        "name": "SourceSystem"
+                      },
+                      {
+                        "type": "datetime",
+                        "name": "TimeGenerated"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Computer"
+                      },
+                      {
+                        "type": "datetime",
+                        "name": "EventTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Facility"
+                      },
+                      {
+                        "type": "string",
+                        "name": "HostName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SeverityLevel"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SyslogMessage"
+                      },
+                      {
+                        "type": "int",
+                        "name": "ProcessID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "HostIP"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProcessName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Type"
+                      }
+                    ]
+                  }
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                      "name": "clv2ws1"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Custom-MyTableRawData"
+                    ],
+                    "destinations": [
+                      "clv2ws1"
+                    ],
+                    "transformKql": "source",
+                    "outputStream": "[parameters('outTable')]"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "dcrId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName'))).immutableId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "DeployDCRSecurityEvent",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
+          },
+          "dataCollectionRuleName": {
+            "value": "SecurityEvent"
+          },
+          "workspaceResourceId": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
+          },
+          "endpointResourceName": {
+            "value": "[parameters('dataCollectionEndpointName')]"
+          },
+          "outTable": {
+            "value": "Microsoft-SecurityEvent"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "1157269147954333527"
+            }
+          },
+          "parameters": {
+            "dataCollectionRuleName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "workspaceResourceId": {
+              "type": "string"
+            },
+            "endpointResourceName": {
+              "type": "string"
+            },
+            "outTable": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2021-09-01-preview",
+              "name": "[parameters('dataCollectionRuleName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('endpointResourceName'))]",
+                "streamDeclarations": {
+                  "Custom-MyTableRawData": {
+                    "columns": [
+                      {
+                        "type": "datetime",
+                        "name": "TimeGenerated"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SourceSystem"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Account"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccountType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Computer"
+                      },
+                      {
+                        "type": "string",
+                        "name": "EventSourceName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Channel"
+                      },
+                      {
+                        "type": "int",
+                        "name": "Task"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Level"
+                      },
+                      {
+                        "type": "string",
+                        "name": "EventData"
+                      },
+                      {
+                        "type": "int",
+                        "name": "EventID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Activity"
+                      },
+                      {
+                        "type": "string",
+                        "name": "EventOriginId"
+                      },
+                      {
+                        "type": "datetime",
+                        "name": "TimeCollected"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ManagementGroupName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccessList"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccessMask"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccessReason"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccountDomain"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccountExpires"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccountName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AccountSessionIdentifier"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AdditionalInfo"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AdditionalInfo2"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AllowedToDelegateTo"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Attributes"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AuditPolicyChanges"
+                      },
+                      {
+                        "type": "int",
+                        "name": "AuditsDiscarded"
+                      },
+                      {
+                        "type": "int",
+                        "name": "AuthenticationLevel"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AuthenticationPackageName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AuthenticationProvider"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AuthenticationServer"
+                      },
+                      {
+                        "type": "int",
+                        "name": "AuthenticationService"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AuthenticationType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CACertificateHash"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CalledStationID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CallerProcessId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CallerProcessName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CallingStationID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CAPublicKeyHash"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CategoryId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CertificateDatabaseHash"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ClassId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ClassName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ClientAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ClientIPAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ClientName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CommandLine"
+                      },
+                      {
+                        "type": "string",
+                        "name": "CompatibleIds"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DCDNSName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceDescription"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DeviceId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DisplayName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Disposition"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DomainBehaviorVersion"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DomainName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DomainPolicyChanged"
+                      },
+                      {
+                        "type": "string",
+                        "name": "DomainSid"
+                      },
+                      {
+                        "type": "string",
+                        "name": "EAPType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ElevatedToken"
+                      },
+                      {
+                        "type": "int",
+                        "name": "ErrorCode"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ExtendedQuarantineState"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FailureReason"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FileHash"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FilePath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FilePathNoUser"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Filter"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ForceLogoff"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Fqbn"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FullyQualifiedSubjectMachineName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "FullyQualifiedSubjectUserName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "GroupMembership"
+                      },
+                      {
+                        "type": "string",
+                        "name": "HandleId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "HardwareIds"
+                      },
+                      {
+                        "type": "string",
+                        "name": "HomeDirectory"
+                      },
+                      {
+                        "type": "string",
+                        "name": "HomePath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ImpersonationLevel"
+                      },
+                      {
+                        "type": "string",
+                        "name": "IpAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "IpPort"
+                      },
+                      {
+                        "type": "int",
+                        "name": "KeyLength"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LmPackageName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LocationInformation"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LockoutDuration"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LockoutObservationWindow"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LockoutThreshold"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LoggingResult"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LogonHours"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LogonID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LogonProcessName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "LogonType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "LogonTypeName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MachineAccountQuota"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MachineInventory"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MachineLogon"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MandatoryLabel"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MaxPasswordAge"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MemberName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MemberSid"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MinPasswordAge"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MinPasswordLength"
+                      },
+                      {
+                        "type": "string",
+                        "name": "MixedDomainMode"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NASIdentifier"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NASIPv4Address"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NASIPv6Address"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NASPort"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NASPortType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NetworkPolicyName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewDate"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewMaxUsers"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewProcessId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewProcessName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewRemark"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewShareFlags"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewUacValue"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewValue"
+                      },
+                      {
+                        "type": "string",
+                        "name": "NewValueType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ObjectName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ObjectServer"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ObjectType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ObjectValueName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OemInformation"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldMaxUsers"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldRemark"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldShareFlags"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldUacValue"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldValue"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OldValueType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "OperationType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PackageName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ParentProcessName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PasswordHistoryLength"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PasswordLastSet"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PasswordProperties"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PreviousDate"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PreviousTime"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PrimaryGroupId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PrivateKeyUsageCount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PrivilegeList"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Process"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProcessId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProcessName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Properties"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProfilePath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProtocolSequence"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ProxyPolicyName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "QuarantineHelpURL"
+                      },
+                      {
+                        "type": "string",
+                        "name": "QuarantineSessionID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "QuarantineSessionIdentifier"
+                      },
+                      {
+                        "type": "string",
+                        "name": "QuarantineState"
+                      },
+                      {
+                        "type": "string",
+                        "name": "QuarantineSystemHealthResult"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RelativeTargetName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RemoteIpAddress"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RemotePort"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Requester"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RequestId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RestrictedAdminMode"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RowsDeleted"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SamAccountName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ScriptPath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SecurityDescriptor"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ServiceAccount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ServiceFileName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ServiceName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "ServiceStartType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ServiceType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SessionName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ShareLocalPath"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ShareName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SidHistory"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Status"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectAccount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubcategoryId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Subject"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectDomainName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectKeyIdentifier"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectLogonId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectMachineName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectMachineSID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectUserName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubjectUserSid"
+                      },
+                      {
+                        "type": "string",
+                        "name": "SubStatus"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TableId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetAccount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetDomainName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetInfo"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetLinkedLogonId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetLogonId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetOutboundDomainName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetOutboundUserName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetServerName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetSid"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetUser"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetUserName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TargetUserSid"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TemplateContent"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TemplateDSObjectFQDN"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TemplateInternalName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TemplateOID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TemplateSchemaVersion"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TemplateVersion"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TokenElevationType"
+                      },
+                      {
+                        "type": "string",
+                        "name": "TransmittedServices"
+                      },
+                      {
+                        "type": "string",
+                        "name": "UserAccountControl"
+                      },
+                      {
+                        "type": "string",
+                        "name": "UserParameters"
+                      },
+                      {
+                        "type": "string",
+                        "name": "UserPrincipalName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "UserWorkstations"
+                      },
+                      {
+                        "type": "string",
+                        "name": "VirtualAccount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "VendorIds"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Workstation"
+                      },
+                      {
+                        "type": "string",
+                        "name": "WorkstationName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "PartitionKey"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RowKey"
+                      },
+                      {
+                        "type": "string",
+                        "name": "StorageAccount"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AzureDeploymentID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "AzureTableName"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Type"
+                      }
+                    ]
+                  }
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                      "name": "clv2ws1"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Custom-MyTableRawData"
+                    ],
+                    "destinations": [
+                      "clv2ws1"
+                    ],
+                    "transformKql": "source",
+                    "outputStream": "[parameters('outTable')]"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "dcrId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName'))).immutableId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "DeployDCRWindowsEvent",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
+          },
+          "dataCollectionRuleName": {
+            "value": "WindowsEvent"
+          },
+          "workspaceResourceId": {
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
+          },
+          "endpointResourceName": {
+            "value": "[parameters('dataCollectionEndpointName')]"
+          },
+          "outTable": {
+            "value": "Microsoft-WindowsEvent"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "2225450379555001931"
+            }
+          },
+          "parameters": {
+            "dataCollectionRuleName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string"
+            },
+            "workspaceResourceId": {
+              "type": "string"
+            },
+            "endpointResourceName": {
+              "type": "string"
+            },
+            "outTable": {
+              "type": "string"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2021-09-01-preview",
+              "name": "[parameters('dataCollectionRuleName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "dataCollectionEndpointId": "[resourceId('Microsoft.Insights/dataCollectionEndpoints', parameters('endpointResourceName'))]",
+                "streamDeclarations": {
+                  "Custom-MyTableRawData": {
+                    "columns": [
+                      {
+                        "type": "string",
+                        "name": "SourceSystem"
+                      },
+                      {
+                        "type": "datetime",
+                        "name": "TimeGenerated"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Provider"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Channel"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Computer"
+                      },
+                      {
+                        "type": "int",
+                        "name": "Task"
+                      },
+                      {
+                        "type": "int",
+                        "name": "EventLevel"
+                      },
+                      {
+                        "type": "string",
+                        "name": "EventLevelName"
+                      },
+                      {
+                        "type": "int",
+                        "name": "EventID"
+                      },
+                      {
+                        "type": "string",
+                        "name": "ManagementGroupName"
+                      },
+                      {
+                        "type": "dynamic",
+                        "name": "EventData"
+                      },
+                      {
+                        "type": "string",
+                        "name": "RawEventData"
+                      },
+                      {
+                        "type": "string",
+                        "name": "EventOriginId"
+                      },
+                      {
+                        "type": "string",
+                        "name": "Type"
+                      }
+                    ]
+                  }
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                      "name": "clv2ws1"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Custom-MyTableRawData"
+                    ],
+                    "destinations": [
+                      "clv2ws1"
+                    ],
+                    "transformKql": "source",
+                    "outputStream": "[parameters('outTable')]"
+                  }
+                ]
+              }
+            }
+          ],
+          "outputs": {
+            "dcrId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/dataCollectionRules', parameters('dataCollectionRuleName'))).immutableId]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "DeployAAvars",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "automationAccountName": {
+            "value": "[parameters('automationAccountName')]"
+          },
+          "accountvariables": {
+            "value": [
+              {
+                "name": "AAName",
+                "value": "[parameters('automationAccountName')]"
+              },
+              {
+                "name": "AARG",
+                "value": "[resourceGroup().name]"
+              },
+              {
+                "name": "WorkspaceName",
+                "value": "[parameters('workspaceName')]"
+              },
+              {
+                "name": "WorkspaceRG",
+                "value": "[variables('LAWRG')]"
+              },
+              {
+                "name": "DCEUrl",
+                "value": "[reference(resourceId('Microsoft.Resources/deployments', 'deployDCE')).outputs.dceURL.value]"
+              },
+              {
+                "name": "DCEName",
+                "value": "[parameters('dataCollectionEndpointName')]"
+              },
+              {
+                "name": "DCRE_RG",
+                "value": "[resourceGroup().name]"
+              },
+              {
+                "name": "CommonSecurityLogDCRId",
+                "value": "[reference(resourceId('Microsoft.Resources/deployments', 'DeployDCRsef')).outputs.dcrId.value]"
+              },
+              {
+                "name": "SyslogDCRId",
+                "value": "[reference(resourceId('Microsoft.Resources/deployments', 'DeployDCRsyslog')).outputs.dcrId.value]"
+              },
+              {
+                "name": "SecurityEventDCRId",
+                "value": "[reference(resourceId('Microsoft.Resources/deployments', 'DeployDCRSecurityEvent')).outputs.dcrId.value]"
+              },
+              {
+                "name": "WindowsEventDCRId",
+                "value": "[reference(resourceId('Microsoft.Resources/deployments', 'DeployDCRWindowsEvent')).outputs.dcrId.value]"
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.5.6.12127",
+              "templateHash": "10927549771352588041"
+            }
+          },
+          "parameters": {
+            "automationAccountName": {
+              "type": "string"
+            },
+            "accountvariables": {
+              "type": "array"
+            }
+          },
+          "resources": [
+            {
+              "copy": {
+                "name": "automationAccountName_accountvariables_name",
+                "count": "[length(parameters('accountvariables'))]"
+              },
+              "type": "Microsoft.Automation/automationAccounts/variables",
+              "apiVersion": "2020-01-13-preview",
+              "name": "[format('{0}/{1}', parameters('automationAccountName'), format('{0}', parameters('accountvariables')[copyIndex()].name))]",
+              "properties": {
+                "description": "[parameters('accountvariables')[copyIndex()].name]",
+                "value": "[format('\"{0}\"', parameters('accountvariables')[copyIndex()].value)]",
+                "isEncrypted": false
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'DeployDCRSecurityEvent')]",
+        "[resourceId('Microsoft.Resources/deployments', 'DeployDCRsef')]",
+        "[resourceId('Microsoft.Resources/deployments', 'DeployDCRsyslog')]",
+        "[resourceId('Microsoft.Resources/deployments', 'DeployDCRWindowsEvent')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
+        "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
+      ]
+    }
+  ]
+}

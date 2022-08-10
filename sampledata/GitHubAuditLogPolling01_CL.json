@@ -1,0 +1,245 @@
+{
+    "Name": "GitHubAuditLogPolling07_CL.json",
+    "Properties":[
+  {
+    "ColumnName": "TenantId",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "SourceSystem",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "MG",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "ManagementGroupName",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "TimeGenerated",
+    "ColumnType": "datetime"
+  },
+  {
+    "ColumnName": "Computer",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "RawData",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "operation_type_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "resolution_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "_document_id_g",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "number_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "oauth_application_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "branch_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "pull_request_url_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "pull_request_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "pull_request_title_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "rerun_type_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "previous_visibility_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "cancelled_at_t",
+    "ColumnType": "datetime"
+  },
+  {
+    "ColumnName": "repository_selection_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "public_repo_b",
+    "ColumnType": "bool"
+  },
+  {
+    "ColumnName": "blocked_user_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "team_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "old_permission_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "run_number_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "workflow_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "workflow_run_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "run_attempt_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "trigger_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "head_sha_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "conclusion_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "head_branch_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "started_at_t",
+    "ColumnType": "datetime"
+  },
+  {
+    "ColumnName": "event_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "completed_at_t",
+    "ColumnType": "datetime"
+  },
+  {
+    "ColumnName": "job_workflow_ref_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "runner_group_name_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "environment_name_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "job_name_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "is_hosted_runner_b",
+    "ColumnType": "bool"
+  },
+  {
+    "ColumnName": "runner_group_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "runner_name_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "secrets_passed_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "runner_id_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "runner_labels_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "key_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "actor_location_country_code_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "visibility_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "repo_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "name_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "permission_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "user_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "_document_id_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "actor_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "org_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "action_s",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "_timestamp_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "created_at_d",
+    "ColumnType": "real"
+  },
+  {
+    "ColumnName": "Type",
+    "ColumnType": "string"
+  },
+  {
+    "ColumnName": "_ResourceId",
+    "ColumnType": "string"
+  }
+]
+}
