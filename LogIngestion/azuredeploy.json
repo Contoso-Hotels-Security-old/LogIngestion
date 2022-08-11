@@ -4,8 +4,8 @@
   "metadata": {
     "_generator": {
       "name": "bicep",
-      "version": "0.5.6.12127",
-      "templateHash": "3387305468021540523"
+      "version": "0.8.9.13224",
+      "templateHash": "718698383593064005"
     }
   },
   "parameters": {
@@ -26,6 +26,21 @@
         "description": "The name of Log Analytics, New or Existing"
       }
     },
+    "newOrExistingLA": {
+      "type": "string",
+      "defaultValue": "new",
+      "allowedValues": [
+        "new",
+        "existing"
+      ]
+    },
+    "ExistingLAWResourceGroup": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource Group name in case of existing Log Analytics"
+      }
+    },
     "functionAppName": {
       "type": "string",
       "maxLength": 18,
@@ -41,18 +56,10 @@
     },
     "dataCollectionEndpointName": {
       "type": "string"
-    },
-    "workspaceId": {
-      "type": "string"
     }
   },
   "variables": {
-    "functionAppNameVar": "[format('{0}{1}', parameters('functionAppName'), uniqueString(resourceGroup().id, parameters('guidValue')))]",
-    "workbookNameVar": "[format('{0}{1}', parameters('workbookName'), uniqueString(resourceGroup().id, parameters('guidValue')))]",
-    "dataCollectionEndpointNameVar": "[format('{0}{1}', parameters('dataCollectionEndpointName'), uniqueString(resourceGroup().id, parameters('guidValue')))]",
-    "automationAccountNameVar": "[format('{0}{1}', parameters('automationAccountName'), uniqueString(resourceGroup().id, parameters('guidValue')))]",
-    "LAWRG": "[if(empty(parameters('workspaceId')), resourceGroup().name, split(parameters('workspaceId'), '/')[4])]",
-    "LAWNAME": "[if(empty(parameters('workspaceId')), parameters('workspaceName'), last(split(parameters('workspaceId'), '/')))]"
+    "LAWRG": "[if(equals(parameters('newOrExistingLA'), 'new'), resourceGroup().name, parameters('ExistingLAWResourceGroup'))]"
   },
   "resources": [
     {
@@ -69,7 +76,7 @@
             "value": "[parameters('location')]"
           },
           "automationAccountName": {
-            "value": "[variables('automationAccountNameVar')]"
+            "value": "[parameters('automationAccountName')]"
           }
         },
         "template": {
@@ -78,8 +85,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "13568226900832290978"
+              "version": "0.8.9.13224",
+              "templateHash": "2911165124705504632"
             }
           },
           "parameters": {
@@ -130,74 +137,6 @@
     {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
-      "name": "[format('deployAArbac{0}', uniqueString(parameters('guidValue')))]",
-      "subscriptionId": "[subscription().subscriptionId]",
-      "location": "[resourceGroup().location]",
-      "properties": {
-        "expressionEvaluationOptions": {
-          "scope": "inner"
-        },
-        "mode": "Incremental",
-        "parameters": {
-          "automationAccountName": {
-            "value": "[variables('automationAccountNameVar')]"
-          },
-          "automationAccountRG": {
-            "value": "[resourceGroup().name]"
-          }
-        },
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "metadata": {
-            "_generator": {
-              "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "18419966530551912874"
-            }
-          },
-          "parameters": {
-            "automationAccountName": {
-              "type": "string"
-            },
-            "automationAccountRG": {
-              "type": "string"
-            },
-            "datenow": {
-              "type": "string",
-              "defaultValue": "[utcNow()]"
-            }
-          },
-          "variables": {
-            "roleDefinitionIds": [
-              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/f353d9bd-d4a6-484e-a77a-8050b599b867', subscription().subscriptionId)]",
-              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293', subscription().subscriptionId)]",
-              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/749f88d5-cbae-40b8-bcfc-e573ddc772fa', subscription().subscriptionId)]",
-              "[format('/subscriptions/{0}/providers/Microsoft.Authorization/roleDefinitions/3913510d-42f4-4e42-8a64-420c390055eb', subscription().subscriptionId)]"
-            ]
-          },
-          "resources": [
-            {
-              "copy": {
-                "name": "roleassignment",
-                "count": "[length(variables('roleDefinitionIds'))]"
-              },
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2020-08-01-preview",
-              "name": "[guid(subscription().subscriptionId, variables('roleDefinitionIds')[copyIndex()], parameters('datenow'))]",
-              "properties": {
-                "principalId": "[reference(extensionResourceId(format('/subscriptions/{0}/resourceGroups/{1}', subscription().subscriptionId, parameters('automationAccountRG')), 'Microsoft.Automation/automationAccounts', parameters('automationAccountName')), '2021-06-22', 'full').identity.principalId]",
-                "roleDefinitionId": "[variables('roleDefinitionIds')[copyIndex()]]",
-                "principalType": "ServicePrincipal"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "type": "Microsoft.Resources/deployments",
-      "apiVersion": "2020-10-01",
       "name": "[format('deployAArunbooks{0}', uniqueString(parameters('guidValue')))]",
       "properties": {
         "expressionEvaluationOptions": {
@@ -209,7 +148,7 @@
             "value": "[parameters('location')]"
           },
           "automationAccountName": {
-            "value": "[variables('automationAccountNameVar')]"
+            "value": "[parameters('automationAccountName')]"
           }
         },
         "template": {
@@ -218,8 +157,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "16675681560749567744"
+              "version": "0.8.9.13224",
+              "templateHash": "6430427587890677706"
             }
           },
           "parameters": {
@@ -242,7 +181,7 @@
                 "logProgress": false,
                 "logVerbose": true,
                 "publishContentLink": {
-                  "uri": "https://raw.githubusercontent.com/baldcorp/publictest/main/scripts/CommonScheduler.ps1",
+                  "uri": "https://raw.githubusercontent.com/Contoso-Hotels-Security/LogIngestion/main/scripts/CommonScheduler.ps1",
                   "version": "1.0.0.0"
                 }
               }
@@ -257,7 +196,7 @@
                 "logProgress": false,
                 "logVerbose": true,
                 "publishContentLink": {
-                  "uri": "https://raw.githubusercontent.com/baldcorp/publictest/main/scripts/CommonLogIngest.ps1",
+                  "uri": "https://raw.githubusercontent.com/Contoso-Hotels-Security/LogIngestion/main/scripts/CommonLogIngest.ps1",
                   "version": "1.0.0.0"
                 }
               }
@@ -272,7 +211,7 @@
                 "logProgress": false,
                 "logVerbose": true,
                 "publishContentLink": {
-                  "uri": "https://raw.githubusercontent.com/baldcorp/publictest/main/scripts/TestLogIngest.ps1",
+                  "uri": "https://raw.githubusercontent.com/Contoso-Hotels-Security/LogIngestion/main/scripts/TestLogIngest.ps1",
                   "version": "1.0.0.0"
                 }
               }
@@ -285,6 +224,97 @@
       ]
     },
     {
+      "condition": "[equals(parameters('newOrExistingLA'), 'new')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "deployLAW",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "workspaceName": {
+            "value": "[parameters('workspaceName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.8.9.13224",
+              "templateHash": "12394474865062702916"
+            }
+          },
+          "parameters": {
+            "workspaceName": {
+              "type": "string"
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]"
+            },
+            "solutionTypes": {
+              "type": "array",
+              "defaultValue": [
+                "SecurityInsights"
+              ]
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2020-10-01",
+              "name": "[parameters('workspaceName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30,
+                "workspaceCapping": {
+                  "dailyQuotaGb": -1
+                },
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              }
+            },
+            {
+              "copy": {
+                "name": "solutionTypes_blank_solutionTypes_workspaceName",
+                "count": "[length(parameters('solutionTypes'))]"
+              },
+              "type": "Microsoft.OperationsManagement/solutions",
+              "apiVersion": "2015-11-01-preview",
+              "name": "[format('{0}({1})', if(empty(parameters('solutionTypes')), '__blank__', parameters('solutionTypes')[copyIndex()]), parameters('workspaceName'))]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+              },
+              "plan": {
+                "name": "[format('{0}({1})', if(empty(parameters('solutionTypes')), '__blank__', parameters('solutionTypes')[copyIndex()]), parameters('workspaceName'))]",
+                "product": "[format('OMSGallery/{0}', if(empty(parameters('solutionTypes')), '__blank__', parameters('solutionTypes')[copyIndex()]))]",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+              }
+            }
+          ],
+          "outputs": {
+            "newLAWid": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "condition": "[equals(parameters('newOrExistingLA'), 'existing')]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2020-10-01",
       "name": "lawexist",
@@ -295,10 +325,10 @@
         "mode": "Incremental",
         "parameters": {
           "workspaceRG": {
-            "value": "[variables('LAWRG')]"
+            "value": "[parameters('ExistingLAWResourceGroup')]"
           },
           "workspaceName": {
-            "value": "[variables('LAWNAME')]"
+            "value": "[parameters('workspaceName')]"
           }
         },
         "template": {
@@ -307,8 +337,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "15982553357079645261"
+              "version": "0.8.9.13224",
+              "templateHash": "8333895376921385311"
             }
           },
           "parameters": {
@@ -347,7 +377,7 @@
             "value": "[parameters('location')]"
           },
           "functionAppName": {
-            "value": "[variables('functionAppNameVar')]"
+            "value": "[parameters('functionAppName')]"
           },
           "guidValue": {
             "value": "[parameters('guidValue')]"
@@ -359,8 +389,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "16460205064601273596"
+              "version": "0.8.9.13224",
+              "templateHash": "9182275857771717596"
             }
           },
           "parameters": {
@@ -527,21 +557,7 @@
               "apiVersion": "2021-02-01",
               "name": "[format('{0}/zipdeploy', parameters('functionAppName'))]",
               "properties": {
-                "packageUri": "https://github.com/baldcorp/publictest/raw/main/scripts/func01.zip"
-              },
-              "dependsOn": [
-                "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
-              ]
-            },
-            {
-              "type": "Microsoft.Authorization/roleAssignments",
-              "apiVersion": "2020-10-01-preview",
-              "name": "[guid(resourceGroup().id, uniqueString(parameters('baseTime')))]",
-              "properties": {
-                "roleDefinitionId": "[format('{0}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c', subscription().id)]",
-                "principalId": "[reference(resourceId('Microsoft.Web/sites', parameters('functionAppName')), '2018-11-01', 'Full').identity.principalId]",
-                "principalType": "ServicePrincipal",
-                "scope": "[resourceGroup().id]"
+                "packageUri": "https://github.com/Contoso-Hotels-Security/LogIngestion/raw/main/scripts/func01.zip"
               },
               "dependsOn": [
                 "[resourceId('Microsoft.Web/sites', parameters('functionAppName'))]"
@@ -552,6 +568,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', format('deployAA{0}', uniqueString(parameters('guidValue'))))]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -569,10 +586,10 @@
             "value": "[parameters('location')]"
           },
           "displayName": {
-            "value": "[variables('workbookNameVar')]"
+            "value": "[parameters('workbookName')]"
           },
           "workspaceName": {
-            "value": "[variables('LAWNAME')]"
+            "value": "[parameters('workspaceName')]"
           },
           "workspacesRG": {
             "value": "[variables('LAWRG')]"
@@ -581,10 +598,10 @@
             "value": "[resourceGroup().name]"
           },
           "automationAccountName": {
-            "value": "[variables('automationAccountNameVar')]"
+            "value": "[parameters('automationAccountName')]"
           },
           "functionName": {
-            "value": "[variables('functionAppNameVar')]"
+            "value": "[parameters('functionAppName')]"
           },
           "functionRG": {
             "value": "[resourceGroup().name]"
@@ -596,8 +613,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "147856271614612955"
+              "version": "0.8.9.13224",
+              "templateHash": "11506694345977150109"
             }
           },
           "parameters": {
@@ -651,6 +668,7 @@
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', format('deployAA{0}', uniqueString(parameters('guidValue'))))]",
         "[resourceId('Microsoft.Resources/deployments', 'DeployfuncAPP')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -665,10 +683,10 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.LAWlocation.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
           },
           "dataCollectionEndpointName": {
-            "value": "[variables('dataCollectionEndpointNameVar')]"
+            "value": "[parameters('dataCollectionEndpointName')]"
           }
         },
         "template": {
@@ -677,8 +695,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "14330851507373296387"
+              "version": "0.8.9.13224",
+              "templateHash": "4478354898303893100"
             }
           },
           "parameters": {
@@ -711,6 +729,7 @@
         }
       },
       "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -725,16 +744,16 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.LAWlocation.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
           },
           "dataCollectionRuleName": {
             "value": "CommonSecurityLog"
           },
           "workspaceResourceId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.existingLAWid.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
           },
           "endpointResourceName": {
-            "value": "[variables('dataCollectionEndpointNameVar')]"
+            "value": "[parameters('dataCollectionEndpointName')]"
           },
           "outTable": {
             "value": "Microsoft-CommonSecurityLog"
@@ -746,8 +765,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "3107494479059515046"
+              "version": "0.8.9.13224",
+              "templateHash": "18306636148570978280"
             }
           },
           "parameters": {
@@ -1414,6 +1433,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -1428,16 +1448,16 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.LAWlocation.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
           },
           "dataCollectionRuleName": {
             "value": "Syslog"
           },
           "workspaceResourceId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.existingLAWid.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
           },
           "endpointResourceName": {
-            "value": "[variables('dataCollectionEndpointNameVar')]"
+            "value": "[parameters('dataCollectionEndpointName')]"
           },
           "outTable": {
             "value": "Microsoft-Syslog"
@@ -1449,8 +1469,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "16515488000610423085"
+              "version": "0.8.9.13224",
+              "templateHash": "10168684702963472338"
             }
           },
           "parameters": {
@@ -1565,6 +1585,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -1579,16 +1600,16 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.LAWlocation.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
           },
           "dataCollectionRuleName": {
             "value": "SecurityEvent"
           },
           "workspaceResourceId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.existingLAWid.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
           },
           "endpointResourceName": {
-            "value": "[variables('dataCollectionEndpointNameVar')]"
+            "value": "[parameters('dataCollectionEndpointName')]"
           },
           "outTable": {
             "value": "Microsoft-SecurityEvent"
@@ -1600,8 +1621,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "1157269147954333527"
+              "version": "0.8.9.13224",
+              "templateHash": "16525618445690529589"
             }
           },
           "parameters": {
@@ -2536,6 +2557,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -2550,16 +2572,16 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.LAWlocation.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
           },
           "dataCollectionRuleName": {
             "value": "WindowsEvent"
           },
           "workspaceResourceId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.existingLAWid.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
           },
           "endpointResourceName": {
-            "value": "[variables('dataCollectionEndpointNameVar')]"
+            "value": "[parameters('dataCollectionEndpointName')]"
           },
           "outTable": {
             "value": "Microsoft-WindowsEvent"
@@ -2571,8 +2593,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "2225450379555001931"
+              "version": "0.8.9.13224",
+              "templateHash": "8667907426480905629"
             }
           },
           "parameters": {
@@ -2695,6 +2717,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -2709,16 +2732,16 @@
         "mode": "Incremental",
         "parameters": {
           "location": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.LAWlocation.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), parameters('location'), reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.LAWlocation.value)]"
           },
           "dataCollectionRuleName": {
             "value": "ASimDnsActivityLogs"
           },
           "workspaceResourceId": {
-            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'lawexist')).outputs.existingLAWid.value]"
+            "value": "[if(equals(parameters('newOrExistingLA'), 'new'), reference(resourceId('Microsoft.Resources/deployments', 'deployLAW'), '2020-10-01').outputs.newLAWid.value, reference(resourceId('Microsoft.Resources/deployments', 'lawexist'), '2020-10-01').outputs.existingLAWid.value)]"
           },
           "endpointResourceName": {
-            "value": "[variables('dataCollectionEndpointNameVar')]"
+            "value": "[parameters('dataCollectionEndpointName')]"
           },
           "outTable": {
             "value": "Microsoft-ASimDnsActivityLogs"
@@ -2730,8 +2753,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "2625930922908060028"
+              "version": "0.8.9.13224",
+              "templateHash": "7387676235667469537"
             }
           },
           "parameters": {
@@ -3078,6 +3101,7 @@
       },
       "dependsOn": [
         "[resourceId('Microsoft.Resources/deployments', 'deployDCE')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     },
@@ -3092,13 +3116,13 @@
         "mode": "Incremental",
         "parameters": {
           "automationAccountName": {
-            "value": "[variables('automationAccountNameVar')]"
+            "value": "[parameters('automationAccountName')]"
           },
           "accountvariables": {
             "value": [
               {
                 "name": "AAName",
-                "value": "[variables('automationAccountNameVar')]"
+                "value": "[parameters('automationAccountName')]"
               },
               {
                 "name": "AARG",
@@ -3106,7 +3130,7 @@
               },
               {
                 "name": "WorkspaceName",
-                "value": "[variables('LAWNAME')]"
+                "value": "[parameters('workspaceName')]"
               },
               {
                 "name": "WorkspaceRG",
@@ -3118,7 +3142,7 @@
               },
               {
                 "name": "DCEName",
-                "value": "[variables('dataCollectionEndpointNameVar')]"
+                "value": "[parameters('dataCollectionEndpointName')]"
               },
               {
                 "name": "DCRE_RG",
@@ -3153,8 +3177,8 @@
           "metadata": {
             "_generator": {
               "name": "bicep",
-              "version": "0.5.6.12127",
-              "templateHash": "10927549771352588041"
+              "version": "0.8.9.13224",
+              "templateHash": "2643379117706452759"
             }
           },
           "parameters": {
@@ -3190,6 +3214,7 @@
         "[resourceId('Microsoft.Resources/deployments', 'DeployDCRsef')]",
         "[resourceId('Microsoft.Resources/deployments', 'DeployDCRsyslog')]",
         "[resourceId('Microsoft.Resources/deployments', 'DeployDCRWindowsEvent')]",
+        "[resourceId('Microsoft.Resources/deployments', 'deployLAW')]",
         "[resourceId('Microsoft.Resources/deployments', 'lawexist')]"
       ]
     }

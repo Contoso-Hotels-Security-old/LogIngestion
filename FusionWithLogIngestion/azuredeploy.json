@@ -51,7 +51,7 @@
         }
     },
     "variables": {
-        "artifactsSimuLand": "https://raw.githubusercontent.com/baldcorp/publictest/main/"
+        "artifactsSimuLand": "https://raw.githubusercontent.com/Contoso-Hotels-Security/LogIngestion/main/"
     },
     "resources": [
         {
@@ -61,7 +61,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[uri(variables('artifactsSimuLand'),'2_deploy/win10CEFServer/azuredeploy.json')]",
+                    "uri": "[uri(variables('artifactsSimuLand'),'FusionWithLogIngestion/win10CEFServer/azuredeploy.json')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {

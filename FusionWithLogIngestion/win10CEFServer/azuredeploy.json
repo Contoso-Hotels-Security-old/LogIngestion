@@ -60,7 +60,7 @@
     "variables": {
         "artifactsBlacksmith": "https://raw.githubusercontent.com/OTRF/Blacksmith/master/",
         "artifactsMSSentinel2Go": "https://raw.githubusercontent.com/OTRF/Microsoft-Sentinel2Go/master/",
-        "artifactslogingestAsAService": "https://raw.githubusercontent.com/baldcorp/publictest/main/",
+        "artifactslogingestAsAService": "https://raw.githubusercontent.com/Contoso-Hotels-Security/LogIngestion/main/",
         "dataConnectors": [
             "MicrosoftDefenderAdvancedThreatProtection"
         ]
@@ -132,7 +132,7 @@
             "properties": {
                 "mode": "Incremental",
                 "templateLink": {
-                    "uri": "[uri(variables('artifactslogingestAsAService'), '2_deploy/logingestionAsService/ingestmainfusion.json')]",
+                    "uri": "[uri(variables('artifactslogingestAsAService'), 'FusionWithLogIngestion/logingestionAsService/azuredeploy.json')]",
                     "contentVersion": "1.0.0.0"
                 },
                 "parameters": {
