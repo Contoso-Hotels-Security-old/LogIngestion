@@ -15,4 +15,4 @@
 
 
 ## Required manual RBAC-activity 
-![Diagram](images/1.drawio)
+![Diagram](images/RBAC-LogIngestion.png)
