@@ -14,5 +14,5 @@
 </a>
 
 
-## Required manual RBAC-activity 
+### Required manual RBAC-activity 
 ![Diagram](images/RBAC-LogIngestion.png)
