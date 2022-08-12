@@ -1,6 +1,6 @@
 <mxfile host="65bd71144e">
     <diagram id="h3fAVp6enQn6pWzyvcsT" name="Page-1">
-        <mxGraphModel dx="664" dy="553" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+        <mxGraphModel dx="940" dy="783" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
@@ -127,7 +127,7 @@
                     <mxGeometry x="1502.8899999999999" y="250" width="68" height="64" as="geometry"/>
                 </mxCell>
                 <mxCell id="40" value="Resource Group&lt;br&gt;with existed LAW" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
-                    <mxGeometry x="1566.9999999999998" y="275" width="110" height="30" as="geometry"/>
+                    <mxGeometry x="1566.9999999999998" y="235" width="110" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="41" value="" style="aspect=fixed;html=1;points=[];align=center;image;fontSize=12;image=img/lib/azure2/management_governance/Log_Analytics_Workspaces.svg;imageBorder=none;strokeWidth=4;" vertex="1" parent="1">
                     <mxGeometry x="1511.8899999999999" y="340" width="50" height="50" as="geometry"/>
@@ -152,9 +152,6 @@
                 </mxCell>
                 <mxCell id="48" value="&lt;font style=&quot;font-size: 18px&quot;&gt;&lt;b&gt;Deployment with &lt;i&gt;new&lt;/i&gt;&lt;br&gt;Log Analytics Workspace&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
                     <mxGeometry x="354.33000000000004" y="60" width="230" height="40" as="geometry"/>
-                </mxCell>
-                <mxCell id="49" value="&lt;b style=&quot;color: rgb(0 , 0 , 0) ; font-family: &amp;#34;helvetica&amp;#34; ; font-size: 18px ; font-style: normal ; letter-spacing: normal ; text-indent: 0px ; text-transform: none ; word-spacing: 0px ; background-color: rgb(248 , 249 , 250)&quot;&gt;Deployment with &lt;/b&gt;&lt;b style=&quot;color: rgb(0 , 0 , 0) ; font-family: &amp;#34;helvetica&amp;#34; ; font-size: 18px ; letter-spacing: normal ; text-indent: 0px ; text-transform: none ; word-spacing: 0px ; background-color: rgb(248 , 249 , 250)&quot;&gt;&lt;i&gt;existed&lt;/i&gt;&lt;br&gt;Log Analytics Workspace&lt;/b&gt;" style="text;whiteSpace=wrap;html=1;fontSize=18;align=center;" vertex="1" parent="1">
-                    <mxGeometry x="1140.8899999999999" y="40" width="240" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="50" value="" style="shape=image;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;aspect=fixed;imageAspect=0;image=data:image/png,iVBORw0KGgoAAAANSUhEUgAAAC0AAAAtCAYAAAA6GuKaAAAEiUlEQVRogdVYS28bVRT+7nhix01SuiiuoTukBkgQEbt2D3tALezoErFEIFYsEFt+BY1YIBAggfITyo5ihKqKbFAgD8d92bWb+DHnY3Hv3Hl4xjPEHhuOZB8fn/s455vzuHcUSSKFDtoePv2pjfaJAASg0kZibvpPXl+DO2EYun3Bo6cSnTiJ5qDfbXmTjSYBj4RCAMSiuZCTjfYNp5nlA7FImYA2+vZTQSgIrGf7AkjdtXJcP1NZADaHWmYM4bADBNydLvFdR9AcxTNBy85ra2bhqH7WMjojoKQgB4PAwBj3f7utoeBoIGYJxmJojvKqA88FRCQyIg4iSbgE4Fe9NA/nxUEgbjJBqNBz0TFNgsKIX5dchQ9rS9bHnhCfHw0T/J6t7FEgQmNdMheLtElN3+PaksKrVQcRoo61ayslvFCZ1AXy0VcPRwHCfnXwkfYTMYEDgEshKKIdUabEybhRIgKlgDfWyri2Wpra6O37A7ufz0UEQr+wIZELARcg9DgdPeEhETL6zw5Og3VUVA8V+iOHPlzGQG2HJG4eXdbVyJrqYRKy0RV8vCd2z64QQlq9tYmIydPphTRITzBad0SDNHykNUSN3ghJeVykLEDQ5FIy1yDNAGlbN4kr1ZJ5hAoKwB+nEtEXwSkCTwJX/PgJyyTh+D90TGl+ZdnBzWcrWK86eLHq4GatEtEXxcUPE8OZImukzUeZNCYd3B8KfnzQB0isL5dM9VD4oF7F1upS5LGehb+/27b7QelOJ0J4tk4nTyfMgcl2RMsRlUNJcPvJEHt9D7MgBhsF/4W/qKJ/UukDUzSmtf7BYASwjI8un7OLiuhq8kunjzvpQEzFPRF4IkHhtp0wkAWE63eicDa3BoIv9p6MLcuiuYlrRZOgSXwcaRsIC5GDOp1+AjcxTRMyobrpJ+ScZaHuiEqZ3mHVgUwC7tbKEg6eKaPRHYS80nzoEQ/DF9sCafDIw7DjaaRpgjJ4EFYmCPfqhQquXqgkLnRnv4/rtw5mn3E5ORNkElkXW455HufjSBStz3EbDwcHU/g89SYR00nXzni9xEJlIeDEDR03XGcuzbwi5NVyKfd4ZCJN/YYpwL0YfmOzjh/uNdHqDTPHC5kD6bDXjMkz0ldcB2++dAkXz5Wz5yNPTPujw17HDzrT6qENf+vlGr69e4RWb5A639xc0mkoCs+fXx5rqnGaVh82/PpGHd/cPcJxdxDqiAg6IjKQ7pwI3tms59hudlRxHdzYqOPr3w9xbBGH5cxTPRZBFdfBu688h9WKa++N/icT6VzPtCBq90c4GQZvnILjdY6OuAg67g2w/dsh+iNzQ2LAMpFeqSrcauwXfj56b+uy3bPZ62O7cYiTkZc43rxhSqclh/jzsXmjZKel0bR6oNnt48vGIU4NwtFCGZy/M2Ka8Bh++eovk4bZWfXAr0cdfH+vmTk/E2nb783NweJkZcbks+l//vsxdnZbueZnVw8fh1AioAB5Z7f1L8bnOHv890j9H43OQPqv9mheluSmkspAurZSwtub5+dlTyZt1CpYv1jGP2VLMJqPwlr1AAAAAElFTkSuQmCC;" vertex="1" parent="1">
                     <mxGeometry x="1179.39" y="345.27000000000004" width="45" height="45" as="geometry"/>
@@ -248,6 +245,9 @@
                 </mxCell>
                 <mxCell id="93" value="Manual&lt;br&gt;Role Assignment" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" vertex="1" connectable="0" parent="1">
                     <mxGeometry x="1150.0007602192638" y="799.9964214872273" as="geometry"/>
+                </mxCell>
+                <mxCell id="94" value="&lt;font style=&quot;font-size: 18px&quot;&gt;&lt;b&gt;Deployment with &lt;i&gt;existed&lt;/i&gt;&lt;br&gt;Log Analytics Workspace&lt;/b&gt;&lt;/font&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+                    <mxGeometry x="1160" y="60" width="230" height="40" as="geometry"/>
                 </mxCell>
             </root>
         </mxGraphModel>
