@@ -8,4 +8,4 @@
 
 
 ### Required manual RBAC-activity 
-![Diagram](/LogIngestion/images/RBAC-LogIngestion.png)
+![Diagram](https://github.com/Contoso-Hotels-Security/LogIngestion/blob/main/images/RBAC-LogIngestion.png)
