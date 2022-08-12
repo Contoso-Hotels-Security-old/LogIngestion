@@ -8,4 +8,4 @@
 
 
 ### Required manual RBAC-activity 
-![Diagram](images/RBAC-LogIngestion.png)
+![Diagram](/LogIngestion/images/RBAC-LogIngestion.png)
