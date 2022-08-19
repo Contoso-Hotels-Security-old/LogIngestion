@@ -391,7 +391,7 @@ ForEach ($file in $files) {
             $customDCR.resources += [PSCustomObject]@{
                 type = "Microsoft.Insights/dataCollectionRules"
                 name = $CustomDCRName
-                location = "eastus"
+                location = "$($ws.location)"
                 apiVersion = "2021-09-01-preview"
                 properties = [PSCustomObject]@{
                     dataCollectionEndpointId = $DCEresourceID
