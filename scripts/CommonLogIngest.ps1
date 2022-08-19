@@ -335,7 +335,7 @@ ForEach ($file in $files) {
                     $DCRFilesampleData.Properties += [pscustomobject]@{$columnName='TimeGenerated';$columnType='DateTime'}
                 }
                 #$CustomTableName = $DCRFilesampleData.Name
-                foreach ($column in ($DCRFilesampleData.Properties | Where-Object { ($_.$columnName -notin "Type", "_ResourceId", 'MG', 'TenantId', '@version', '@timestamp', 'time', 'with', 'SHA-SHA256', 'SHA—SHA256_s') -and ($_.name -notlike "_*") -and ($_.name.length -le 45)})) {
+                foreach ($column in ($DCRFilesampleData.Properties | Where-Object { ($_.$columnName -notin "Type", "_ResourceId", 'MG', 'TenantId', '@version', '@timestamp', 'time', 'with', 'SHA-SHA256', 'SHA—SHA256_s') -and ($_.$columnName -notlike "_*") -and ($_.$columnName.length -le 45)})) {
 					if ($column.$columnType -eq "Double" ) {$column.$columnType = "real"}
                     $CustomTablecolumns += @{name = $($column.$columnName); type = $($column.$columnType.ToLower())}
                     if ($column.$columnType -eq "Bool") {$column.$columnType = "boolean"}
