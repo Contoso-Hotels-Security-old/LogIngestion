@@ -462,6 +462,9 @@
               "name": "[parameters('functionAppName')]",
               "location": "[parameters('location')]",
               "tags": {},
+              "properties":
+              {
+              },
               "sku": {
                 "tier": "Dynamic",
                 "name": "Y1"
