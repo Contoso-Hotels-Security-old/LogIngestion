@@ -268,7 +268,7 @@
               "location": "[parameters('location')]",
               "properties": {
                 "sku": {
-                  "name": "pergb2018"
+                  "name": "PerGB2018"
                 },
                 "retentionInDays": 30,
                 "workspaceCapping": {
